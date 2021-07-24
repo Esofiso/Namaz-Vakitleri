@@ -1,14 +1,17 @@
+SEHIR = "nigde"
+simdiki_vakit = "shezmI"
 import datetime
 import json
 import locale
-
+from win10toast import ToastNotifier
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QEvent, Qt
+from PyQt5.QtWidgets import QWidget
 
 locale.setlocale(locale.LC_ALL, '')
 
-class Ui_Form(object):
+class Ui_Form(QWidget):
     def setupUi(self, Form):
         Form.setObjectName("Form")
         Form.resize(642, 237)
@@ -261,12 +264,20 @@ class Ui_Form(object):
         self.aksam_vakti.setText(_translate("Form", f'{gunlu["aks"][0]}.{gunlu["aks"][1]}'))
         self.yatsi_vakti.setText(_translate("Form", f'{gunlu["yat"][0]}.{gunlu["yat"][1]}'))
 
+        self.lab_namaz_vakitleri.installEventFilter(self)
 
-def vakitler():
+    def eventFilter(self, source, event):
+        if event.type() == QtCore.QEvent.MouseButtonDblClick:
+            global SEHIR
+            SEHIR = "nigde" if SEHIR == "corum" else "corum"
+            ui.lab_namaz_vakitleri.setText("<html><head/><body><p align=\"center\">Sehir Degisti</p></body></html>")
+        return QWidget.eventFilter(self, source, event)
+
+def vakits():
     """
     <<Çorumun 1 aylık namaz vakitlerini elde etmeye çalışıyoruz>>
     Started on Sat Apr 24 18:36:41 2021
-    @Author: ESAD
+    @Author: ShezmI
     """
     import calendar
     import itertools as it
@@ -278,7 +289,7 @@ def vakitler():
 
     from bs4 import BeautifulSoup
 
-    sehirler = ["corum"]
+    sehirler = ["corum", "nigde"]
 
     bes_vakit = ("ims", "sab", "ogl", "iki", "aks", "yat")
 
@@ -323,28 +334,28 @@ def vakitler():
         for day in it.islice(sehir_aylik, starting_day, num_days):
             sehir_aylik[day] = dict(zip(bes_vakit, vakitler[day-1]))
 
-        with open(f"corum.txt", mode="w") as f:
+        with open(f"{sehir}.txt", mode="w") as f:
             f.write(json.dumps(sehir_aylik, indent=4))
 
         print(f"{sehir} processed.")
 
 
-    with open("en_son_ne_zaman_calisti.txt", "w") as file:
-        file.write(dt.now().strftime("%Y\n%m"))
+        with open(f"en_son_ne_zaman_calisti_{sehir}.txt", "w") as file:
+            file.write(dt.now().strftime("%Y\n%m"))
 
 def en_son_ne_zaman_calisti():
     an = datetime.datetime.now()
-    with open("en_son_ne_zaman_calisti.txt", "r") as file:
+    with open(f"en_son_ne_zaman_calisti_{SEHIR}.txt", "r") as file:
         yıl, ay = file.readlines()
 
     yıl = int(yıl.strip())
     ay = int(ay)
 
     if ay != an.month or yıl != an.year:
-        vakitler()
+        vakits()
     
 def vakitleri_getir():
-    with open("corum.txt", "r") as file:
+    with open(f"{SEHIR}.txt", "r") as file:
         vakitler = json.load(file)
     return vakitler
 
@@ -357,7 +368,7 @@ for gun in vakitleri_getir():
     gunler.append(int(gun))
 
 def kac_dakka_var():
-    global time, simdiki_vakit
+    global time, simdiki_vakit, kalan_saat, kalan_dakika, kalan_saniye
 
     _translate = QtCore.QCoreApplication.translate
     an = datetime.datetime.now()
@@ -412,6 +423,8 @@ def kac_dakka_var():
     iki = int(gunlu["iki"][0])*3600 + int(gunlu["iki"][1])*60
     aks = int(gunlu["aks"][0])*3600 + int(gunlu["aks"][1])*60
     yat = int(gunlu["yat"][0])*3600 + int(gunlu["yat"][1])*60
+
+    onceki_vakit = simdiki_vakit
 
     if toplam < ims:
         ui.imsak.setStyleSheet("background:qradialgradient(spread:pad, cx:1, cy:0, radius:2, fx:1, fy:0, stop:0 rgba(118, 15, 15, 255), stop:0.193182 rgba(255, 31, 31, 255), stop:0.710227 rgba(24, 0, 165, 250));\ncolor:rgb(227, 227, 227)")
@@ -536,7 +549,7 @@ def kac_dakka_var():
         ui.yatsi.setText(_translate("Form",  "Akşam"))
 
         ui.imsak_vakti.setText(_translate("Form", f'{gunlu["yat"][0]}.{gunlu["yat"][1]}'))
-        gunlu = sozluk[f"{an.day+1}"]
+        gunlu = sozluk[f"{an.day}"]
         ui.sabah_vakti.setText(_translate("Form", f'{gunlu["ims"][0]}.{gunlu["ims"][1]}'))
         ui.ogle_vakti.setText(_translate("Form", f'{gunlu["sab"][0]}.{gunlu["sab"][1]}'))
         ui.ikindi_vakti.setText(_translate("Form", f'{gunlu["ogl"][0]}.{gunlu["ogl"][1]}'))
@@ -558,6 +571,23 @@ def kac_dakka_var():
         ui.lab_vaktin_cikmasina.setText(_translate("Form", "<html><head/><body><p align=\"right\">İmsak'ın Çıkmasına:  </p></body></html>"))
         simdiki_vakit = "İmsak'a"
 
+    if kalan_saat == 0 and kalan_dakika == 15 and kalan_saniye == 0:
+        ot(15)
+    elif kalan_saat == 0 and kalan_dakika == 7:
+        ot(8)
+
+    if (kalan_saniye % 30) > 20:
+        if SEHIR == "corum":
+            sehir_adi = "Çorum"
+
+        else:
+            sehir_adi = "Nigde"
+        
+        ui.lab_namaz_vakitleri.setText(f"<html><head/><body><p align=\"center\">{sehir_adi}</p></body></html>")
+
+    else:
+        ui.lab_namaz_vakitleri.setText("<html><head/><body><p>Namaz Vakitleri</p></body></html>")
+
     kuculduyse()
     time = QtCore.QTime(kalan_saat, kalan_dakika, kalan_saniye)
 
@@ -565,6 +595,15 @@ def kuculduyse():
     _translate = QtCore.QCoreApplication.translate
     if window_minimized == True:
         Form.setWindowTitle(_translate("Form", f"{simdiki_vakit} {str(time.hour()).zfill(2)}:{str(time.minute()).zfill(2)}:{str(time.second()).zfill(2)}"))
+
+toaster = ToastNotifier()
+def ot(hangisi):    
+    header = simdiki_vakit
+    if hangisi == 15:
+        text = "15 Dakika Kaldı"
+    elif hangisi == 8:
+        text = f"{kalan_dakika} Dakika {kalan_saniye} Saniye Kaldı"
+    toaster.show_toast(header, text, duration=5, threaded=True)
 
 def timerEvent():
     global time
