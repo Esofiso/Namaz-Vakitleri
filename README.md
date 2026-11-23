@@ -18,4 +18,5 @@ Namaz Vakitleri GUI Uygulaması
 > 5.  *Varsayılan olarak vakte 15 ve 7 dakika kaldığında sizi uyarır.*
 >><img width="1166" height="363" alt="image" src="https://github.com/user-attachments/assets/e79670d2-54b2-401e-8083-e9707975a195" />
 > 6.  *Kompakt modu sayesinde vakit sayacını ekranınızda her zaman en önde konumlandırabilirsiniz*
->><img width="977" height="546" alt="image" src="https://github.com/user-attachments/assets/0cd8bd97-79a0-4507-ba6d-728d2b749ebe" />
+>><img width="1457" height="661" alt="image" src="https://github.com/user-attachments/assets/100b5016-180d-4ba4-8dd4-29a4bf042151" />
+
